@@ -74,6 +74,18 @@ def test_select_mat_athlete_prefers_person_nearest_mat_center() -> None:
     assert selected == 1
 
 
+def test_select_mat_athlete_falls_back_to_nearest_mat_boundary() -> None:
+    polygon = np.array([[20, 20], [80, 20], [80, 80], [20, 80]], dtype=np.int32)
+    boxes = np.array([[0, 5, 10, 15], [85, 40, 95, 55]], dtype=float)
+    masks = np.zeros((2, 100, 100), dtype=np.uint8)
+    masks[0, 5:16, 0:11] = 1
+    masks[1, 40:56, 85:96] = 1
+
+    selected = select_mat_athlete(boxes, masks, polygon, 100, 100)
+
+    assert selected == 1
+
+
 def test_plausible_same_person_rejects_large_jump() -> None:
     assert not plausible_same_person(
         np.array([500, 50, 600, 400]),

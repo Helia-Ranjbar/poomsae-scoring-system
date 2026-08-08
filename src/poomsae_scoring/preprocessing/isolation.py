@@ -388,13 +388,32 @@ def select_mat_athlete(
         ],
         dtype=bool,
     )
-    if not np.any(on_mat):
-        raise RuntimeError("No detected person's ground contact is inside the competition mat.")
-    distances = np.linalg.norm(
+    center_distances = np.linalg.norm(
         (contacts - mat_center) / np.array([frame_width, frame_height]),
         axis=1,
     )
-    return int(np.argmin(np.where(on_mat, distances, np.inf)))
+    if np.any(on_mat):
+        return int(np.argmin(np.where(on_mat, center_distances, np.inf)))
+
+    boundary_distances = np.array(
+        [
+            abs(
+                cv2.pointPolygonTest(
+                    mat_polygon.astype(np.float32),
+                    tuple(contact.astype(float)),
+                    True,
+                )
+            )
+            for contact in contacts
+        ],
+        dtype=float,
+    )
+    normalized_boundary_distances = boundary_distances / math.hypot(
+        frame_width,
+        frame_height,
+    )
+    fallback_scores = normalized_boundary_distances + 0.1 * center_distances
+    return int(np.argmin(fallback_scores))
 
 
 class PlayerIsolationPipeline:
