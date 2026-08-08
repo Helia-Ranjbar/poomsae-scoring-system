@@ -27,6 +27,7 @@ dev = [
 
 [project.scripts]
 poomsae-preprocess = "poomsae_scoring.cli:main"
+poomsae-isolate = "poomsae_scoring.isolation_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

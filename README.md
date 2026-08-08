@@ -62,6 +62,52 @@ The notebook is configured for the current video in `data/raw`. It first shows
 numbered person candidates so the automatically selected athlete can be
 confirmed or manually changed before the full video is processed.
 
+## Dataset player-isolation pipeline
+
+The reusable pipeline groups videos by the `<player>-<angle>` filename pattern,
+finds the athlete standing nearest the center of the competition mat, tracks
+that identity through the full recording with ByteTrack, and isolates the
+athlete with YOLO instance-segmentation masks.
+
+For the current dataset, files such as `WP12-0.MP4`, `WP12-45.MP4`, and
+`WP12-135.MP4` are treated as three camera views of player `WP12`.
+
+```bash
+poomsae-isolate data/raw \
+  --output data/processed/players \
+  --model notebooks/yolo26n-seg.pt \
+  --device cuda:0
+```
+
+Use `--device auto` to select CUDA when available and otherwise use the CPU.
+Use `--max-duration 10` for a short end-to-end trial before processing the
+complete dataset.
+
+The processed dataset is organized by player first and angle second:
+
+```text
+data/processed/players/
+├── manifest.json
+└── WP12/
+    ├── manifest.json
+    └── angles/
+        ├── 0/
+        │   ├── isolated.mp4
+        │   ├── crop.mp4
+        │   ├── tracking.csv
+        │   └── metadata.json
+        ├── 45/
+        └── 135/
+```
+
+- `isolated.mp4` preserves the source resolution and blacks out everything
+  except the selected athlete.
+- `crop.mp4` centers the isolated athlete on a square canvas for pose models.
+- `tracking.csv` records frame-level track IDs, boxes, confidence, and missing
+  or recovered frames.
+- Manifests make all available player-angle pairs discoverable by later scoring
+  stages.
+
 ### GPU inference
 
 The notebook requires `cuda:0` by default. All YOLO segmentation, tracking, and
