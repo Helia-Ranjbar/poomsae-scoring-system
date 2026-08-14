@@ -108,11 +108,50 @@ data/processed/players/
 - Manifests make all available player-angle pairs discoverable by later scoring
   stages.
 
-### GPU inference
+## Pose estimation
 
-The notebook requires `cuda:0` by default. All YOLO segmentation, tracking, and
-pose inference calls use that GPU, so the workload cannot silently fall back to
-the CPU.
+Open `notebooks/player_pose_estimation.ipynb` after athlete isolation. The
+notebook discovers every available
+`data/processed/players/<player>/angles/<angle>/crop.mp4`, runs MediaPipe Pose
+in video-tracking mode, and resumes without repeating completed videos. It uses
+the same `model_complexity=2` and 0.5 detection/tracking confidence settings as
+the sample in `front_athlete_preprocessing.ipynb`.
+
+Each processed angle receives:
+
+```text
+data/processed/players/WP12/angles/45/pose/
+├── keypoints.csv
+├── features.csv
+├── annotated.mp4
+└── metadata.json
+```
+
+- `keypoints.csv` contains all 33 MediaPipe x/y/z coordinates and visibility
+  confidence values for every frame.
+- `features.csv` contains joint angles, stance/balance measurements, and
+  frame-to-frame motion energy.
+- `annotated.mp4` overlays the selected skeleton for visual quality control.
+- `metadata.json` records inference settings and the pose detection rate.
+
+The same pipeline can be run from the command line:
+
+```bash
+poomsae-pose data/processed/players \
+  --model-complexity 2 \
+  --detection-confidence 0.5 \
+  --tracking-confidence 0.5
+```
+
+Use `--angles 45` to process only the 45-degree view (54 videos in the current
+dataset), or omit `--angles` to process all three views (162 videos).
+
+### Inference devices
+
+The athlete-isolation notebook requires `cuda:0` by default. YOLO segmentation
+and ByteTrack inference use that GPU, so isolation cannot silently fall back to
+the CPU. The pose-estimation notebook uses MediaPipe Pose's TensorFlow Lite CPU
+backend and therefore does not use the `DEVICE` setting.
 
 Before starting Jupyter, verify that the NVIDIA driver and CUDA-enabled PyTorch
 build are available in the same virtual environment:
@@ -123,7 +162,8 @@ python3 -c "import torch; print(torch.cuda.is_available(), torch.version.cuda)"
 ```
 
 Install the CUDA-enabled PyTorch build appropriate for the installed NVIDIA
-driver, then reinstall the project dependencies if needed. The GPU setting is:
+driver, then reinstall the project dependencies if needed. The isolation GPU
+setting is:
 
 ```python
 INFERENCE_DEVICE = "cuda:0"
@@ -153,3 +193,22 @@ data/
 3. Poomsae movement segmentation.
 4. Stance, balance, trajectory, timing, and power features.
 5. Rule-based and learned scoring calibrated to judge annotations.
+
+## Prepare the labeled modeling dataset
+
+After all pose videos are complete, run
+`notebooks/prepare_model_dataset.ipynb`. It parses the `WPn.txt` score labels,
+matches them to the three camera views by player ID, filters unreliable pose
+views, computes camera-specific temporal summaries, and exports:
+
+```text
+data/processed/model_ready/
+├── prepared_dataset.csv
+├── features.csv
+├── targets.csv
+├── quality_report.csv
+└── metadata.json
+```
+
+Each exported row is one player performance. The 0°, 45°, and 135° pose
+features remain separate because their 2D geometry is camera-dependent.

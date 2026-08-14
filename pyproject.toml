@@ -9,10 +9,11 @@ description = "Video preprocessing foundation for automated Poomsae Taekwondo sc
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "numpy>=2.1,<3",
+    "numpy>=1.26,<2",
     "opencv-python-headless>=4.10,<5",
     "tqdm>=4.66,<5",
     "ultralytics-opencv-headless>=8.4.102,<8.5",
+    "mediapipe>=0.10.20,<0.11",
     "matplotlib>=3.10,<4",
     "pandas>=2.2,<3",
     "scikit-learn>=1.6,<2",
@@ -28,6 +29,7 @@ dev = [
 [project.scripts]
 poomsae-preprocess = "poomsae_scoring.cli:main"
 poomsae-isolate = "poomsae_scoring.isolation_cli:main"
+poomsae-pose = "poomsae_scoring.pose_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
